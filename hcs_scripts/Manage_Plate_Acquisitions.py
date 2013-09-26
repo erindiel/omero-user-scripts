@@ -21,10 +21,17 @@
 
 Add or remove PlateAcquisition(s) in a given Plate.
 """
-from omero.util import script_utils
+
 from omero.gateway import BlitzGateway
-from omero.rtypes import *
-from omero.model import *
+
+from omero.model import PlateAcquisitionI
+from omero.model import PlateI
+
+from omero.rtypes import rlong
+from omero.rtypes import rstring
+
+from omero.sys import ParametersI
+
 import omero.scripts as scripts
 
 
@@ -32,30 +39,29 @@ def run():
     """
     """
     dataTypes = [rstring("Plate")]
-    
-    client = scripts.client("Manage_Plate_Acquisitions.py",
+
+    client = scripts.client(
+        "Manage_Plate_Acquisitions.py",
         "Add or remove PlateAcquisition(s) in a given Plate",
-        
+
         scripts.String("Data_Type", optional=False, grouping="1",
-            description="The data type you want to work with.", 
-            values=dataTypes, 
-            default="Plate",
-        ),
-        
+                       description="The data type you want to work with.",
+                       values=dataTypes,
+                       default="Plate"),
+
         scripts.List("IDs", optional=False, grouping="2",
-            description="List of Plate IDs",
-        ).ofType(rlong(0)),
-        
+                     description="List of Plate IDs").ofType(rlong(0)),
+
         scripts.String("Mode", optional=False, grouping="3",
-            description="Select if you want to add or remove PlateAcquisitions",
-            values=[rstring("Add"), rstring("Remove")],
-            default="Add",
-        ),
-        
-        version = "0.2",
-        authors = ["Niko Klaric"],
-        institutions = ["Glencoe Software Inc."],
-        contact = "support@glencoesoftware.com",
+                       description="Select if you want to add or "
+                                   "remove PlateAcquisitions",
+                       values=[rstring("Add"), rstring("Remove")],
+                       default="Add"),
+
+        version="0.2",
+        authors=["Niko Klaric"],
+        institutions=["Glencoe Software Inc."],
+        contact="support@glencoesoftware.com",
     )
 
     try:
@@ -73,7 +79,8 @@ def run():
         for plateId in scriptParams["IDs"]:
             plateObj = connection.getObject("Plate", plateId)
             if plateObj is None:
-                client.setOutput("Message",
+                client.setOutput(
+                    "Message",
                     rstring("ERROR: No Plate with ID %s" % plateId))
                 return
 
@@ -92,10 +99,10 @@ def run():
                 plateAcquisitionId = plateAcquisitionObj.getId()._val
 
                 processedMessages.append(
-                    "Linked new PlateAcquisition with ID %d to Plate with ID %d."
-                        % (plateAcquisitionId, plateId))
+                    "Linked new PlateAcquisition with ID %d"
+                    " to Plate with ID %d." % (plateAcquisitionId, plateId))
             else:
-                params = omero.sys.ParametersI()
+                params = ParametersI()
                 params.addId(plateId)
 
                 queryString = """
@@ -109,26 +116,26 @@ def run():
                 if plateAcquisitionList:
                     updateList = []
 
-                    for plateAcquisitionObj in plateAcquisitionList:
-                        for wellSampleObj in plateAcquisitionObj.copyWellSample():
-                            wellSampleObj.setPlateAcquisition(None)
-                            updateList.append(wellSampleObj)
+                    for plate_acquisition in plateAcquisitionList:
+                        for well_sample in plate_acquisition.copyWellSample():
+                            well_sample.setPlateAcquisition(None)
+                            updateList.append(well_sample)
 
                         updateService.saveArray(updateList)
 
-                        plateAcquisitionObj.clearWellSample()
-                        plateAcquisitionObj.clearAnnotationLinks()
+                        plate_acquisition.clearWellSample()
+                        plate_acquisition.clearAnnotationLinks()
 
-                        plateAcquisitionObj = updateService.saveAndReturnObject(
-                            plateAcquisitionObj)
-                        updateService.deleteObject(plateAcquisitionObj)
+                        plate_acquisition = updateService.saveAndReturnObject(
+                            plate_acquisition)
+                        updateService.deleteObject(plate_acquisition)
 
                 processedMessages.append(
-                    "%d PlateAcquisition(s) removed from Plate with ID %d."
-                        % (len(plateAcquisitionList), plateId))
+                    "%d PlateAcquisition(s) removed from Plate with ID %d." %
+                    (len(plateAcquisitionList), plateId))
 
-        client.setOutput("Message", rstring("No errors. %s"
-            % " ".join(processedMessages)))
+        client.setOutput("Message", rstring("No errors. %s" %
+                         " ".join(processedMessages)))
     finally:
         client.closeSession()
 
