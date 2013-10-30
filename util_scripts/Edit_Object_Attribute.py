@@ -87,14 +87,16 @@ def run():
         else:
             value = rtype(value)
 
+        ctx = {'omero.group': '-1'}
         o = query_service.get(
-            script_params['Data_Type'], script_params['ID'],
-            {'omero.group': '-1'})
+            script_params['Data_Type'], script_params['ID'], ctx)
         setattr(o, script_params['Attribute'], value)
-        update_service.saveObject(
-            o,
-            {'omero.group': str(o.details.group.id)}
-        )
+        ctx = None
+        try:
+            ctx = {'omero.group': str(o.details.group.id.val)}
+        except AttributeError:
+            pass
+        update_service.saveObject(o, ctx)
 
         client.setOutput('Message', rstring(
             'Setting of attribute successful.'))
