@@ -43,8 +43,8 @@ def run():
         scripts.String('Attribute', optional=False, grouping='3',
                        description='Attribute to set'),
 
-        scripts.String('Type', optional=False, grouping='4',
-                       description='Type of the value to set',
+        scripts.String('Attribute_Type', optional=False, grouping='4',
+                       description='Type of the attribute to set',
                        values=[
                            rstring('Bool'), rstring('Double'),
                            rstring('Float'), rstring('Int'),
@@ -72,17 +72,17 @@ def run():
         query_service = session.getQueryService()
 
         value = script_params['Value']
-        if script_params['Type'] == 'Bool':
+        if script_params['Attribute_Type'] == 'Bool':
             value = rtype(bool(value))
-        elif script_params['Type'] == 'Double':
+        elif script_params['Attribute_Type'] == 'Double':
             value = rdouble(float(value))
-        elif script_params['Type'] == 'Float':
+        elif script_params['Attribute_Type'] == 'Float':
             value = rtype(float(value))
-        elif script_params['Type'] == 'Int':
+        elif script_params['Attribute_Type'] == 'Int':
             value = rtype(int(value))
-        elif script_params['Type'] == 'Long':
+        elif script_params['Attribute_Type'] == 'Long':
             value = rtype(long(value))
-        elif script_params['Type'] == 'Time':
+        elif script_params['Attribute_Type'] == 'Time':
             value = rtime(long(value))
         else:
             value = rtype(value)
