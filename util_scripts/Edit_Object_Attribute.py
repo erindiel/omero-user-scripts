@@ -91,8 +91,10 @@ def run():
             script_params['Data_Type'], script_params['ID'],
             {'omero.group': '-1'})
         setattr(o, script_params['Attribute'], value)
-        update_service.saveObject(o,
-            {'omero.group': str(o.details.group.id)})
+        update_service.saveObject(
+            o,
+            {'omero.group': str(o.details.group.id)}
+        )
 
         client.setOutput('Message', rstring(
             'Setting of attribute successful.'))
@@ -101,4 +103,3 @@ def run():
 
 if __name__ == '__main__':
     run()
-
