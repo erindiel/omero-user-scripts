@@ -22,6 +22,9 @@
 Edit the attributes of an object.
 '''
 
+import omero
+import omero.clients
+
 from omero.rtypes import rstring, rtype, rtime, rdouble
 
 import omero.scripts as scripts
