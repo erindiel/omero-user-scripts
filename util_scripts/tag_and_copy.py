@@ -18,18 +18,19 @@ from omero.rtypes import rstring
 import omero.scripts as scripts
 
 
-# This function copies the full resolution images from AFI fileset to saparate
-# folder. New folder will be called "CurrentFolderName_userDefinedSuffix".
-# The full resolution images are filtered by name: "image #1".
+# This function creates new dataset and copies to it the full resolution images
+# from an AFI fileset. New folder is called
+# "CurrentFolderName_userDefinedSuffix".
+# The full resolution images are matched by: "image #1".
 def copyHighresImages(conn, filesetList, scriptParams):
     updateService = conn.getUpdateService()
     datasetId = 0
     for filesetId in filesetList:
         fileset = conn.getObject("Fileset", filesetId)
         for fsImage in fileset.copyImages():
-            # Copy images containing "image #1" string
+            # Copy images containing "image #1" string.
             if "image #1" in fsImage.getName():
-                # If this is first image to copy create the new dataset
+                # If this is the first image to copy create a new dataset.
                 if datasetId == 0:
                     datasetOriginal = conn.getObject(
                         "Dataset", scriptParams["IDs"])
@@ -41,21 +42,21 @@ def copyHighresImages(conn, filesetList, scriptParams):
                     datasetNew =\
                         conn.getUpdateService().saveAndReturnObject(datasetNew)
                     datasetId = datasetNew.getId().getValue()
-                    # Link the data to the current Project
+                    # Link the data to the current Project.
                     link = omero.model.ProjectDatasetLinkI()
                     link.parent = omero.model.ProjectI(project.getId(), False)
                     link.child = omero.model.DatasetI(datasetId, False)
                     updateService.saveObject(link)
                 print fsImage.getName()
-                # Copy image to the new dataset.
+                # Copy the image to the new dataset.
                 link = omero.model.DatasetImageLinkI()
                 link.parent = omero.model.DatasetI(datasetId, False)
                 link.child = omero.model.ImageI(fsImage.getId(), False)
                 updateService.saveObject(link)
 
 
-# This function loops through images in the Dataset, creates a list of tags for
-# each image and creates a list of unique filesets in the Dataset.
+# This function loops through the images in the Dataset, creates a list
+# of tags for each image and creates a list of unique filesets in the Dataset.
 def tagImages(conn, scriptParams):
     datasetId = scriptParams["IDs"]
     print "\nDataset: %s" % datasetId
@@ -65,20 +66,22 @@ def tagImages(conn, scriptParams):
     for image in dataset.listChildren():
         fileset = image.getFileset()
 
-        # Conditions to tag and copy images:
-        # If image does not belog to a fileset skip (it's not a part of .afi).
+        # Conditions to tag and copy the images:
+        # If image does not belog to a fileset - skip
+        # (it's not a part of an AFI fileset).
         if fileset is None:
             continue
-        # If the fileset does not have exactly 3 images skip
-        # (it's not a part of .afi).
+        # If the fileset does not have exactly 3 images - skip
+        # (it's not an AFI filset).
         if len(fileset.copyImages()) == 3:
             continue
         # Do not store duplicates in the fileset list.
         if fileset.getId() not in filesetList:
             filesetList.append(fileset.getId())
 
-        # Create tags based on the file name.
-        # The file name and the file extension will be used to create two tags,
+        # Create tags based on the Image name.
+        # If the Image name is based on the file name,
+        # the name and the extension is used to create two tags,
         # e.g 1235_abce.afi will be split into: 1235_abce and afi.
         image_for_tag = omero.model.ImageI(image.getId(), False)
         name = image.getName()
@@ -105,7 +108,7 @@ def tagImages(conn, scriptParams):
             if len(tagList_temp) == 3:
                 tag_temp = tagList_temp[1] + "." + tagList_temp[2][:3]
                 tagList.append(tag_temp)
-        # If the Image name is not a file name (name.extension)
+        # If the Image name is not based on a file name (name.extension)
         # then use each word as a separte tag.
         if len(tagList_temp) == 1:
             tagList_temp = name.split(" ")
