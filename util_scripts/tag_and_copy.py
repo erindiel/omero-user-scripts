@@ -18,8 +18,8 @@ from omero.rtypes import rstring
 import omero.scripts as scripts
 
 
-# This function creates new dataset and copies to it the full resolution images
-# from an AFI fileset. New folder is called
+# This function creates a new dataset and copies to it
+# the full resolution images from an AFI fileset. New folder is called
 # "CurrentFolderName_userDefinedSuffix".
 # The full resolution images are matched by: "image #1".
 def copyHighresImages(conn, filesetList, scriptParams):
