@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 -----------------------------------------------------------------------------
-  Copyright (C) 2013 Glencoe Software, Inc. All rights reserved.
+  Copyright (C) 2014 Glencoe Software, Inc. All rights reserved.
 
 
   This program is free software; you can redistribute it and/or modify
