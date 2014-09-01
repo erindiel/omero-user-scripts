@@ -82,57 +82,79 @@ def tagImages(conn, scriptParams):
             continue
         # If the fileset does not have exactly 3 images - skip
         # (it's not an AFI filset).
-        if len(fileset.copyImages()) == 3:
+        if len(fileset.copyImages()) != 3:
             continue
-        # Do not store duplicates in the fileset list.
-        if fileset.getId() not in filesetList:
-            filesetList.append(fileset.getId())
 
         # Create tags based on the Image name.
         # If the Image name is based on the file name,
         # the name and the extension is used to create two tags,
         # e.g 1235_abce.afi will be split into: 1235_abce and afi.
-        image_for_tag = omero.model.ImageI(image.getId(), False)
+        imageForLink = omero.model.ImageI(image.getId(), False)
         name = image.getName()
         # Split on '.' to separate name from extension.
-        tagList_temp = name.split(".")
+        tagListTemp = name.split(".")
         tagList = []
-        if len(tagList_temp) > 1:
+
+        # Current Tag List -> to avoid adding the same tag  more then once.
+        currentTagList = []
+        for tag in image.listAnnotations():
+            try:
+                currentTagList.append(tag.getTextValue())
+            except:
+                pass
+
+        if len(tagListTemp) > 1:
             # If the file name contains the system path ignore it (unix).
-            tag_temp = tagList_temp[0].split("/")
-            if len(tag_temp) == 1:
+            tagTemp = tagListTemp[0].split("/")
+            if len(tagTemp) == 1:
                 # If the file name contains
                 # system path ignore it (windows).
-                tag_temp = tagList_temp[0].split("\\")
-            tag_temp = tag_temp[len(tag_temp) - 1]
-            tagList.append(tag_temp)
+                tagTemp = tagListTemp[0].split("\\")
+            tagTemp = tagTemp[len(tagTemp) - 1]
+            if tagTemp not in currentTagList:
+                tagList.append(tagTemp)
 
             # If the file has simple extension "name.ext"
             # then use ext as a tag.
-            if len(tagList_temp) == 2:
-                tag_temp = tagList_temp[1][:3]
-                tagList.append(tag_temp)
+            if len(tagListTemp) == 2:
+                tagTemp = tagListTemp[1][:3]
+                if tagTemp not in currentTagList:
+                    tagList.append(tagTemp)
             # If the file has two term extension "name.ome.tif"
             # then use ome.tif as a tag
-            if len(tagList_temp) == 3:
-                tag_temp = tagList_temp[1] + "." + tagList_temp[2][:3]
-                tagList.append(tag_temp)
+            if len(tagListTemp) == 3:
+                tagTemp = tagListTemp[1] + "." + tagListTemp[2][:3]
+                if tagTemp not in currentTagList:
+                    tagList.append(tagTemp)
         # If the Image name is not based on a file name (name.extension)
         # then use each word as a separte tag.
-        if len(tagList_temp) == 1:
-            tagList_temp = name.split(" ")
-            for tag in tagList_temp:
+        if len(tagListTemp) == 1:
+            tagListTemp = name.split(" ")
+            for tag in tagListTemp:
+                if tag in currentTagList:
+                    continue
                 tagList.append(tag)
-        print counter, "Tags created for: ", image.getName(), tagList
+        print counter, "Tags created for: ", image.getName(), tagList,\
+            currentTagList
         # Attach the tags to the Image.
+
+        if len(tagList) == 0:
+            print counter, "Skipping: ", image.getName()
+            counter += 1
+            continue
+        counter += 1
+
+        # Do not store duplicates in the fileset list.
+        if fileset.getId() not in filesetList:
+            filesetList.append(fileset.getId())
+
         for tag in tagList:
             imageTag = omero.model.TagAnnotationI()
             imageTag.setTextValue(rstring(tag))
             link = omero.model.ImageAnnotationLinkI()
             link.setChild(imageTag)
-            link.setParent(image_for_tag)
+            link.setParent(imageForLink)
             conn.getUpdateService().saveAndReturnObject(link)
-        counter += 1
     # Copy full resolution images to a saparate Dataset.
     copyHighresImages(conn, filesetList, scriptParams)
     message = "DONE"
