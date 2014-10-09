@@ -37,8 +37,8 @@ def copyHighresImages(conn, filesetList, scriptParams):
     for filesetId in filesetList:
         fileset = conn.getObject("Fileset", filesetId)
         for fsImage in fileset.copyImages():
-            # Copy images containing "image #1" string.
-            if "image #1" in fsImage.getName():
+            # Copy full resolution image, which does not contain "[]"
+            if "[" not in fsImage.getName():
                 # If this is the first image to copy create a new dataset.
                 if datasetId == 0:
                     datasetOriginal = conn.getObject(
