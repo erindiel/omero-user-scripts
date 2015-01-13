@@ -32,7 +32,7 @@ def get_dataset_list(conn, projectId):
     datasetList = {}
     for dataset in project.listChildren():
         dataset.getName()
-        datasetList[dataset.getName()] = dataset.getId()
+        datasetList[dataset.getName().upper()] = dataset.getId()
     return datasetList
 
 
@@ -60,7 +60,7 @@ def copyHighresImages(conn, filesetList, scriptParams):
                 newDatasetName = format_image_name(imageName)
                 # If the dataset does not exist in the specified Project_ID
                 # create new dataset and add to the list
-                if newDatasetName not in datasetList:
+                if newDatasetName.upper() not in datasetList:
                     datasetNew = omero.model.DatasetI()
                     datasetNew.setName(rstring(newDatasetName))
                     datasetNew =\
@@ -70,7 +70,7 @@ def copyHighresImages(conn, filesetList, scriptParams):
                     link.parent = omero.model.ProjectI(project.getId(), False)
                     link.child = omero.model.DatasetI(datasetId, False)
                     updateService.saveObject(link)
-                    datasetList["newDatasetName"] = datasetId
+                    datasetList[newDatasetName.upper()] = datasetId
                 else:
                     datasetId = datasetList["newDatasetName"]
                 # If this is the first image to copy create a new dataset.
