@@ -27,6 +27,21 @@ from omero.rtypes import rstring
 import omero.scripts as scripts
 
 
+def get_dataset_list(conn, projectId):
+    project = conn.getObject("Project", projectId)
+    datasetList = {}
+    for dataset in project.listChildren():
+        dataset.getName()
+        datasetList[dataset.getName()] = dataset.getId()
+    return datasetList
+
+
+# Get dataset name from image name.
+def format_image_name(fileName):
+    name = fileName.split("-")[0] + "-" + fileName.split("-")[1]
+    return name
+
+
 # This function creates a new dataset and copies to it
 # the full resolution images from an AFI fileset. New folder is called
 # "CurrentFolderName_userDefinedSuffix".
@@ -34,28 +49,31 @@ import omero.scripts as scripts
 def copyHighresImages(conn, filesetList, scriptParams):
     updateService = conn.getUpdateService()
     datasetId = 0
+    project = conn.getObject("Project", scriptParams["Project_ID"])
+    datasetList = get_dataset_list(conn, scriptParams["Project_ID"])
     for filesetId in filesetList:
         fileset = conn.getObject("Fileset", filesetId)
         for fsImage in fileset.copyImages():
             # Copy full resolution image, which does not contain "[]"
-            if "[" not in fsImage.getName():
-                # If this is the first image to copy create a new dataset.
-                if datasetId == 0:
-                    datasetOriginal = conn.getObject(
-                        "Dataset", scriptParams["IDs"])
-                    project = datasetOriginal.getParent()
+            imageName = fsImage.getName()
+            if "[" not in imageName:
+                newDatasetName = format_image_name(imageName)
+                # If the dataset does not exist in the specified Project_ID
+                # create new dataset and add to the list
+                if newDatasetName not in datasetList:
                     datasetNew = omero.model.DatasetI()
-                    datasetNew.setName(
-                        rstring(datasetOriginal.getName()
-                                + "_" + scriptParams["Suffix"]))
+                    datasetNew.setName(rstring(newDatasetName))
                     datasetNew =\
                         conn.getUpdateService().saveAndReturnObject(datasetNew)
                     datasetId = datasetNew.getId().getValue()
-                    # Link the data to the current Project.
                     link = omero.model.ProjectDatasetLinkI()
                     link.parent = omero.model.ProjectI(project.getId(), False)
                     link.child = omero.model.DatasetI(datasetId, False)
                     updateService.saveObject(link)
+                    datasetList["newDatasetName"] = datasetId
+                else:
+                    datasetId = datasetList["newDatasetName"]
+                # If this is the first image to copy create a new dataset.
                 print fsImage.getName()
                 # Copy the image to the new dataset.
                 link = omero.model.DatasetImageLinkI()
@@ -66,10 +84,7 @@ def copyHighresImages(conn, filesetList, scriptParams):
 
 # This function loops through the images in the Dataset, creates a list
 # of tags for each image and creates a list of unique filesets in the Dataset.
-def tagImages(conn, scriptParams):
-    datasetId = scriptParams["IDs"]
-    print "\nDataset: %s" % datasetId
-    dataset = conn.getObject("Dataset", datasetId)
+def tagImages(conn, dataset, scriptParams):
     counter = 1
     filesetList = []
     for image in dataset.listChildren():
@@ -114,7 +129,7 @@ def tagImages(conn, scriptParams):
             if tagTemp not in currentTagList:
                 tagList.append(tagTemp)
 
-            # If the file has simple extension "name.ext"
+            # If the file has a simple extension "name.ext"
             # then use ext as a tag.
             if len(tagListTemp) == 2:
                 tagTemp = tagListTemp[1][:3]
@@ -160,6 +175,16 @@ def tagImages(conn, scriptParams):
     message = "DONE"
     return message
 
+
+# This function loops through the datasets.
+def tagDatasets(conn, scriptParams):
+    for datasetId in scriptParams["IDs"]:
+        print "\nDataset: %s" % datasetId
+        dataset = conn.getObject("Dataset", datasetId)
+        tagImages(conn, dataset, scriptParams)
+    message = "DONE"
+    return message
+
 if __name__ == "__main__":
     global datasetId
     dataTypes = [rstring('Dataset')]
@@ -177,6 +202,10 @@ if __name__ == "__main__":
         scripts.Int(
             "IDs", optional=False, grouping="2",
             description="Dataset to tag and copy images from."),
+
+        scripts.Int(
+            "Project_ID", optional=False, grouping="2",
+            description="Project ID to create new Dataset in."),
 
         scripts.String(
             "Suffix", optional=False, grouping="3",
@@ -196,7 +225,7 @@ if __name__ == "__main__":
                 scriptParams[key] = client.getInput(key, unwrap=True)
         # wrap client to use the Blitz Gateway
         conn = BlitzGateway(client_obj=client)
-        message = tagImages(conn, scriptParams)
+        message = tagDatasets(conn, scriptParams)
         client.setOutput("Message", rstring(message))
     finally:
         client.closeSession()
