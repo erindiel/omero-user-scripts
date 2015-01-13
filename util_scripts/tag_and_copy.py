@@ -32,13 +32,39 @@ def get_dataset_list(conn, projectId):
     datasetList = {}
     for dataset in project.listChildren():
         dataset.getName()
+        # Make the names upper case to avoid splitting slides when typos occur.
         datasetList[dataset.getName().upper()] = dataset.getId()
     return datasetList
 
 
-# Get dataset name from image name.
+def get_image_list(conn, datasetId):
+    dataset = conn.getObject("Dataset", datasetId)
+    imageList = {}
+    for image in dataset.listChildren():
+        # Make the names upper case to avoid splitting slides when typos occur.
+        imageList[image.getId()] = dataset.getName()
+    return imageList
+
+
+def clear_system_path(name):
+    name = name.split("/")
+    if len(name) == 1:
+        # If the file name contains
+        # system path ignore it (windows).
+        name = name[0]
+        name = name.split("\\")
+    name = name[len(name) - 1]
+    return name
+
+
+# Get dataset name from image name. If image name is not at least two term
+# ????-???? then skip it.
 def format_image_name(fileName):
-    name = fileName.split("-")[0] + "-" + fileName.split("-")[1]
+    name = fileName.split("-")
+    if len(name) > 1:
+        name = name[0] + "-" + name[1]
+    else:
+        name = ""
     return name
 
 
@@ -51,13 +77,17 @@ def copyHighresImages(conn, filesetList, scriptParams):
     datasetId = 0
     project = conn.getObject("Project", scriptParams["Project_ID"])
     datasetList = get_dataset_list(conn, scriptParams["Project_ID"])
+    datasetIdOld = 0
     for filesetId in filesetList:
         fileset = conn.getObject("Fileset", filesetId)
         for fsImage in fileset.copyImages():
             # Copy full resolution image, which does not contain "[]"
             imageName = fsImage.getName()
+            imageName = clear_system_path(imageName)
             if "[" not in imageName:
                 newDatasetName = format_image_name(imageName)
+                if newDatasetName == "":
+                    continue
                 # If the dataset does not exist in the specified Project_ID
                 # create new dataset and add to the list
                 if newDatasetName.upper() not in datasetList:
@@ -65,6 +95,7 @@ def copyHighresImages(conn, filesetList, scriptParams):
                     datasetNew.setName(rstring(newDatasetName))
                     datasetNew =\
                         conn.getUpdateService().saveAndReturnObject(datasetNew)
+                    datasetIdOld = datasetId
                     datasetId = datasetNew.getId().getValue()
                     link = omero.model.ProjectDatasetLinkI()
                     link.parent = omero.model.ProjectI(project.getId(), False)
@@ -72,14 +103,19 @@ def copyHighresImages(conn, filesetList, scriptParams):
                     updateService.saveObject(link)
                     datasetList[newDatasetName.upper()] = datasetId
                 else:
-                    datasetId = datasetList["newDatasetName"]
+                    datasetIdOld = datasetId
+                    datasetId = datasetList[newDatasetName.upper()]
+
+                if datasetId != datasetIdOld:
+                    imageList = get_image_list(conn, datasetId)
                 # If this is the first image to copy create a new dataset.
-                print fsImage.getName()
-                # Copy the image to the new dataset.
-                link = omero.model.DatasetImageLinkI()
-                link.parent = omero.model.DatasetI(datasetId, False)
-                link.child = omero.model.ImageI(fsImage.getId(), False)
-                updateService.saveObject(link)
+                if fsImage.getId() not in imageList:
+                    print fsImage.getName()
+                    # Copy the image to the new dataset.
+                    link = omero.model.DatasetImageLinkI()
+                    link.parent = omero.model.DatasetI(datasetId, False)
+                    link.child = omero.model.ImageI(fsImage.getId(), False)
+                    updateService.saveObject(link)
 
 
 # This function loops through the images in the Dataset, creates a list
@@ -110,7 +146,7 @@ def tagImages(conn, dataset, scriptParams):
         tagListTemp = name.split(".")
         tagList = []
 
-        # Current Tag List -> to avoid adding the same tag  more then once.
+        # Current Tag List -> to avoid adding the same tag more then once.
         currentTagList = []
         for tag in image.listAnnotations():
             try:
@@ -120,12 +156,8 @@ def tagImages(conn, dataset, scriptParams):
 
         if len(tagListTemp) > 1:
             # If the file name contains the system path ignore it (unix).
-            tagTemp = tagListTemp[0].split("/")
-            if len(tagTemp) == 1:
-                # If the file name contains
-                # system path ignore it (windows).
-                tagTemp = tagListTemp[0].split("\\")
-            tagTemp = tagTemp[len(tagTemp) - 1]
+            tagTemp = tagListTemp[0]
+            tagTemp = clear_system_path(tagTemp)
             if tagTemp not in currentTagList:
                 tagList.append(tagTemp)
 
@@ -199,17 +231,13 @@ if __name__ == "__main__":
             description="Choose source of images (only Dataset supported)",
             values=dataTypes, default="Dataset"),
 
-        scripts.Int(
+        scripts.List(
             "IDs", optional=False, grouping="2",
-            description="Dataset to tag and copy images from."),
+            description="Dataset to tag and copy images from.").ofType(long),
 
         scripts.Int(
-            "Project_ID", optional=False, grouping="2",
+            "Project_ID", optional=False, grouping="3",
             description="Project ID to create new Dataset in."),
-
-        scripts.String(
-            "Suffix", optional=False, grouping="3",
-            description="New dataset suffix.", default="full_res"),
 
         version="0.1",
         authors=["Emil Rozbicki"],
