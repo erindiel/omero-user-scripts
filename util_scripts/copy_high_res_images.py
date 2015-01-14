@@ -31,6 +31,15 @@ import re
 class copyHighResImages:
 
     def __init__(self, conn, scriptParams):
+        """
+        Class to copy high resolution svs and afi files to the new datasets.
+        scriptParams have to include target "Project_ID" and a list of
+        source dataset "IDS".
+
+        @param conn: BlitzGateway connector
+        @param scriptParams: scipt parameters.
+        """
+
         self.FILENAME_REGEX = re.compile(r'^(\w+-\w+)-.*')
         self.conn = conn
         self.target_project_id = scriptParams["Project_ID"]
@@ -52,6 +61,10 @@ class copyHighResImages:
                            " where i.id = :id"
 
     def getImageList(self):
+        """
+        Retrive images from the source datasets.
+        """
+
         image_dict = {}
         for datasetId in self.source_datasets_list:
             dataset = conn.getObject("Dataset", datasetId)
@@ -69,12 +82,20 @@ class copyHighResImages:
             print image, self.image_dict[image]
 
     def getTargetDatasetNames(self):
+        """
+        Convert image names to target dataset names and return as unique
+        list.
+        """
         dataset_names = set()
         for image in self.image_dict:
             dataset_names.add(self.image_dict[image])
         return dataset_names
 
     def getDatasetMap(self):
+        """
+        Convert unique list of dataset names to a map
+        (dataset_name, dataset_object).
+        """
         dataset_map = {}
         params = omero.sys.ParametersI()
         params.add("pid", rlong(self.target_project_id))
@@ -99,6 +120,9 @@ class copyHighResImages:
         return dataset_map
 
     def getExistingImageIds(self, dataset_dict):
+        """
+        Get a list of images in target datasets.
+        """
         image_ids = []
         for dataset_name in dataset_dict:
             image_ids_temp = [
@@ -107,12 +131,20 @@ class copyHighResImages:
         return image_ids
 
     def saveImagesToServer(self, dataset_dict):
+        """
+        Convert dataset hash map to list and save linked images to the server.
+
+        @param dataset_dict: map(dataset_name, dataset_object)
+        """
         dataset_list = []
         for dataset_name in dataset_dict:
             dataset_list.append(dataset_dict[dataset_name])
         self.update_service.saveAndReturnArray(dataset_list)
 
     def copyImages(self):
+        """
+        Link images to the target datasets.
+        """
         dataset_dict = self.getDatasetMap()
         image_ids = self.getExistingImageIds(dataset_dict)
         for image_id in self.image_dict:
@@ -128,6 +160,9 @@ class copyHighResImages:
         self.saveImagesToServer(dataset_dict)
 
     def run(self):
+        """
+        Call this methods after class initialization to copy the images.
+        """
         self.copyImages()
         return "Done"
 
