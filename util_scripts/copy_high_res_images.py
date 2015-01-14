@@ -26,7 +26,6 @@ from omero.rtypes import rstring, rlong
 import omero.scripts as scripts
 
 import re
-from sets import Set
 
 
 class copyHighResImages:
@@ -71,7 +70,7 @@ class copyHighResImages:
             print image, self.image_dict[image]
 
     def getTargetDatasetNames(self):
-        dataset_names = Set()
+        dataset_names = set()
         for image in self.image_dict:
             dataset_names.add(self.image_dict[image])
         return dataset_names
@@ -108,6 +107,12 @@ class copyHighResImages:
             image_ids.extend(image_ids_temp)
         return image_ids
 
+    def saveImagesToServer(self, dataset_dict):
+        dataset_list = []
+        for dataset_name in dataset_dict:
+            dataset_list.append(dataset_dict[dataset_name])
+        self.update_service.saveAndReturnArray(dataset_list)
+
     def copyImages(self):
         dataset_dict = self.getDatasetMap()
         image_ids = self.getExistingImageIds(dataset_dict)
@@ -121,10 +126,7 @@ class copyHighResImages:
                 continue
             print "Coping image: ", image_id, self.image_dict[image_id]
             dataset_dict[self.image_dict[image_id]].linkImage(image)
-        dataset_list = []
-        for dataset_name in dataset_dict:
-            dataset_list.append(dataset_dict[dataset_name])
-        self.update_service.saveAndReturnArray(dataset_list)
+        self.saveImagesToServer(dataset_dict)
 
     def run(self):
         self.copyImages()
