@@ -54,7 +54,6 @@ class copyHighResImages:
     def getImageList(self):
         image_dict = {}
         for datasetId in self.source_datasets_list:
-            print "\nDataset: %s" % datasetId
             dataset = conn.getObject("Dataset", datasetId)
             for image in dataset.listChildren():
                 if "[" in image.getName():
