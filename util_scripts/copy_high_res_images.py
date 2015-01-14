@@ -51,14 +51,6 @@ class copyHighResImages:
                            " join fetch i.datasetLinks as dLinks" \
                            " join fetch dLinks.parent" \
                            " where i.id = :id"
-        self.images_in_dataset_query = \
-            "select i from Image as i" \
-            " join fetch i.datasetLinks as dLinks" \
-            " join fetch dLinks.parent as d" \
-            " where d.id = :did" \
-            " and i.details.owner.id = :id" \
-            " and i.details.group.id = :gid" \
-            " and lower(i.name) like '%svs%series%'""
 
     def getImageList(self):
         image_dict = {}
@@ -108,9 +100,20 @@ class copyHighResImages:
             dataset_map[name] = dataset
         return dataset_map
 
+    def getExistingImageIds(self, dataset_dict):
+        image_ids = []
+        for dataset_name in dataset_dict:
+            image_ids_temp = [
+                v.id.val for v in dataset_dict[dataset_name].linkedImageList()]
+            image_ids.extend(image_ids_temp)
+        print "ok"
+
     def copyImages(self):
         dataset_dict = self.getDatasetMap()
+        image_ids = self.getExistingImageIds(dataset_dict)
         for image_id in self.image_dict:
+            if image_id in image_ids:
+                continue
             params = omero.sys.ParametersI()
             params.addId(image_id)
             image = self.query_service.findByQuery(self.image_query, params)
