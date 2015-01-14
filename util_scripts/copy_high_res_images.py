@@ -106,7 +106,7 @@ class copyHighResImages:
             image_ids_temp = [
                 v.id.val for v in dataset_dict[dataset_name].linkedImageList()]
             image_ids.extend(image_ids_temp)
-        print "ok"
+        return image_ids
 
     def copyImages(self):
         dataset_dict = self.getDatasetMap()
