@@ -161,7 +161,7 @@ class copyHighResImages:
 
     def run(self):
         """
-        Call this methods after class initialization to copy the images.
+        Call this methods after class instantiate to copy the images.
         """
         self.copyImages()
         return "Done"
