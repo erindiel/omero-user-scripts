@@ -30,9 +30,7 @@ import re
 
 class copyHighResImages:
 
-    def __init__(
-        self, conn, scriptParams, FILENAME_REGEX=re.compile(r'^(\w+-\w+)-.*')
-    ):
+    def __init__(self, conn, scriptParams):
         """
         Class to copy high resolution svs and afi files to the new datasets.
         scriptParams have to include target "Project_ID" and a list of
@@ -42,7 +40,7 @@ class copyHighResImages:
         @param scriptParams: scipt parameters.
         """
 
-        self.FILENAME_REGEX = FILENAME_REGEX
+        self.FILENAME_REGEX = re.compile(scriptParams["Regex_String"])
         self.conn = conn
         self.target_project_id = scriptParams["Project_ID"]
         self.source_datasets_list = scriptParams["IDs"]
@@ -57,10 +55,6 @@ class copyHighResImages:
             " left outer join fetch d.imageLinks as i_link" \
             " left outer join fetch i_link.child" \
             " where p.id = :pid and d.name = :dname"
-        self.image_query = "select i from Image as i" \
-                           " join fetch i.datasetLinks as dLinks" \
-                           " join fetch dLinks.parent" \
-                           " where i.id = :id"
 
     def getImageList(self):
         """
@@ -178,6 +172,11 @@ if __name__ == "__main__":
         scripts.Int(
             "Project_ID", optional=False, grouping="3",
             description="Project ID to create new Dataset in."),
+
+        scripts.String(
+            "Regex_String", optional=False, grouping="4",
+            description="New dataset name will be based on the image name \
+            formated by regex", default="^(\w+-\w+)-.*"),
 
         version="0.1",
         authors=["Emil Rozbicki"],
