@@ -106,9 +106,9 @@ class copyHighResImages:
                 dataset = \
                     self.update_service.saveAndReturnObject(dataset)
                 datasetId = dataset.getId().getValue()
-                print "New dataset ID: ", datasetId
+                print "\tNew dataset ID:", datasetId
                 link = omero.model.ProjectDatasetLinkI()
-                print "Linking dataset to ", self.target_project_id
+                print "\tLinking dataset to:", self.target_project_id
                 link.parent = omero.model.ProjectI(
                     self.target_project_id, False)
                 link.child = omero.model.DatasetI(datasetId, False)
@@ -140,7 +140,7 @@ class copyHighResImages:
                 v.id.val for v in dataset_target.linkedImageList()]
             if image_id in image_ids:
                 continue
-            print "Copying image: ", image_id, self.image_dict[image_id]
+            print "Copying image:", image_id, self.image_dict[image_id]
             dataset_target.linkImage(omero.model.ImageI(image_id, False))
         self.saveImagesToServer(dataset_dict)
 
