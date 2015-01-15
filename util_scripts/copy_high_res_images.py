@@ -30,7 +30,9 @@ import re
 
 class copyHighResImages:
 
-    def __init__(self, conn, scriptParams):
+    def __init__(
+        self, conn, scriptParams, FILENAME_REGEX=re.compile(r'^(\w+-\w+)-.*')
+    ):
         """
         Class to copy high resolution svs and afi files to the new datasets.
         scriptParams have to include target "Project_ID" and a list of
@@ -40,7 +42,7 @@ class copyHighResImages:
         @param scriptParams: scipt parameters.
         """
 
-        self.FILENAME_REGEX = re.compile(r'^(\w+-\w+)-.*')
+        self.FILENAME_REGEX = FILENAME_REGEX
         self.conn = conn
         self.target_project_id = scriptParams["Project_ID"]
         self.source_datasets_list = scriptParams["IDs"]
