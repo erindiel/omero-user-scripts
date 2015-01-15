@@ -140,7 +140,7 @@ class copyHighResImages:
                 v.id.val for v in dataset_target.linkedImageList()]
             if image_id in image_ids:
                 continue
-            print "Coping image: ", image_id, self.image_dict[image_id]
+            print "Copying image: ", image_id, self.image_dict[image_id]
             dataset_target.linkImage(omero.model.ImageI(image_id, False))
         self.saveImagesToServer(dataset_dict)
 
