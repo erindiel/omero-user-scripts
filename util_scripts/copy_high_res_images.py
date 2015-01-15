@@ -74,7 +74,7 @@ class copyHighResImages:
                 file_name = self.FILENAME_REGEX.match(image.getName())
                 if file_name is None:
                     continue
-                image_dict[image.getId()] = file_name.groups()[0]
+                image_dict[image.getId()] = file_name.group(1)
         return image_dict
 
     def printImageList(self):
@@ -104,12 +104,15 @@ class copyHighResImages:
             dataset = self.query_service.findByQuery(
                 self.dataset_query, params)
             if dataset is None:
-                new_dataset = omero.model.DatasetI()
-                new_dataset.setName(rstring(name))
-                new_dataset = \
-                    self.update_service.saveAndReturnObject(new_dataset)
-                datasetId = new_dataset.getId().getValue()
+                print "Creating new datset"
+                dataset = omero.model.DatasetI()
+                dataset.setName(rstring(name))
+                dataset = \
+                    self.update_service.saveAndReturnObject(dataset)
+                datasetId = dataset.getId().getValue()
+                print "New dataset ID: ", datasetId
                 link = omero.model.ProjectDatasetLinkI()
+                print "Linking dataset to ", self.target_project_id
                 link.parent = omero.model.ProjectI(
                     self.target_project_id, False)
                 link.child = omero.model.DatasetI(datasetId, False)
@@ -118,17 +121,6 @@ class copyHighResImages:
                     self.dataset_query, params)
             dataset_map[name] = dataset
         return dataset_map
-
-    def getExistingImageIds(self, dataset_dict):
-        """
-        Get a list of images in target datasets.
-        """
-        image_ids = []
-        for dataset_name in dataset_dict:
-            image_ids_temp = [
-                v.id.val for v in dataset_dict[dataset_name].linkedImageList()]
-            image_ids.extend(image_ids_temp)
-        return image_ids
 
     def saveImagesToServer(self, dataset_dict):
         """
@@ -146,17 +138,14 @@ class copyHighResImages:
         Link images to the target datasets.
         """
         dataset_dict = self.getDatasetMap()
-        image_ids = self.getExistingImageIds(dataset_dict)
         for image_id in self.image_dict:
+            dataset_target = dataset_dict[self.image_dict[image_id]]
+            image_ids = [
+                v.id.val for v in dataset_target.linkedImageList()]
             if image_id in image_ids:
                 continue
-            params = omero.sys.ParametersI()
-            params.addId(image_id)
-            image = self.query_service.findByQuery(self.image_query, params)
-            if image is None:
-                continue
             print "Coping image: ", image_id, self.image_dict[image_id]
-            dataset_dict[self.image_dict[image_id]].linkImage(image)
+            dataset_target.linkImage(omero.model.ImageI(image_id, False))
         self.saveImagesToServer(dataset_dict)
 
     def run(self):
@@ -171,10 +160,9 @@ if __name__ == "__main__":
     global datasetId
     dataTypes = [rstring('Dataset')]
     client = scripts.client(
-        'Tag_and_copy_full_res.py',
+        'copy_high_res_images.py',
         """
-        This script tags images in the dataset using their name and copies
-        full resolution image to the new dataset.
+        This script copies the full resolution images to the new dataset.
         """,
         scripts.String(
             "Data_Type", optional=False, grouping="1",
