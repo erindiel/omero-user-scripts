@@ -250,9 +250,6 @@ def runAsScript():
         conn = BlitzGateway(client_obj=client)
         nameChanger = renameChannels(conn, scriptParams)
         message = nameChanger.run()
-        #message = "DOne"
-        # convert Dataset(s) to Plate(s). Returns new plates or screen
-        #newObj, message = datasets_to_plates(conn, scriptParams)
         client.setOutput("Message", rstring(message))
 
     finally:
