@@ -24,6 +24,7 @@ Add or remove PlateAcquisition(s) in a given Plate.
 
 import omero
 import omero.clients
+assert omero
 
 from omero.gateway import BlitzGateway
 

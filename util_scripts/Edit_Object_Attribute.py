@@ -24,6 +24,7 @@ Edit the attributes of an object.
 
 import omero
 import omero.clients
+assert omero
 
 from omero.rtypes import rstring, rtype, rtime, rdouble
 
