@@ -119,6 +119,23 @@ class renameChannels:
         lc_ids = [lc_id[0] for lc_id in lc_ids]
         return [lc_id.getValue() for lc_id in lc_ids]
 
+    def updateImageNames(self, image_list):
+        image_list = self.update_service.saveAndReturnArray(image_list)
+
+    def removeLCsFromList(self, image, lc_ids_list):
+        image_noc = image.getPrimaryPixels().getSizeC().getValue()
+        for c in range(image_noc):
+            lc_id = image.getPrimaryPixels().getChannel(c). \
+                getLogicalChannel().getId().getValue()
+            lc_ids_list.remove(lc_id)
+        return lc_ids_list
+
+    def renameLCs(self, image):
+        number_of_channels = len(self.new_channel_names)
+        for c in range(number_of_channels):
+            image.getPrimaryPixels().getChannel(c).getLogicalChannel().setName(
+                rstring(self.new_channel_names[c]))
+
     def renameBatch(self, lc_ids, step):
         lc_ids_batch = random.sample(lc_ids, step)
         params = omero.sys.ParametersI()
@@ -126,7 +143,6 @@ class renameChannels:
         number_of_channels = len(self.new_channel_names)
         paging = self.image_paging
         counter = 0
-        exit = False
         while len(lc_ids_batch) > 0:
             params.page(counter * paging, paging)
             counter += 1
@@ -134,39 +150,23 @@ class renameChannels:
                 self.get_image_query, params)
             print "Retrived %i images" % len(image_list)
             for image in image_list:
-                check_lc = image.getPixels(0).getChannel(0). \
+                check_lc = image.getPrimaryPixels().getChannel(0). \
                     getLogicalChannel().getId().getValue()
                 if check_lc not in lc_ids:
-                    exit = True
-                    break
+                    self.updateImageNames(image_list)
+                    return
                 print "Renaming", image.getName().getValue(), \
                     image.getId().getValue()
-                image_noc = image.getPixels(0).getSizeC().getValue()
+                image_noc = image.getPrimaryPixels().getSizeC().getValue()
                 if image_noc != number_of_channels:
                     print "\tChannels don't match, skipping"
-                    for c in range(0, image_noc):
-                        lc_id = \
-                            image.getPixels(0).getChannel(c). \
-                            getLogicalChannel().getId().getValue()
-                        lc_ids.remove(lc_id)
-                        lc_ids_batch.remove(lc_id)
+                    lc_ids = self.removeLCsFromList(image, lc_ids)
+                    lc_ids_batch = self.removeLCsFromList(image, lc_ids_batch)
                     continue
-                for c in xrange(0, number_of_channels):
-                    print "Removing: ", \
-                        image.getPixels(0).getChannel(c). \
-                        getLogicalChannel().getId().getValue()
-                    image.getPixels(0).getChannel(c). \
-                        getLogicalChannel().setName(
-                            rstring(self.new_channel_names[c]))
-                    lc_id = \
-                        image.getPixels(0).getChannel(c). \
-                        getLogicalChannel().getId().getValue()
-                    lc_ids.remove(lc_id)
-                    lc_ids_batch.remove(lc_id)
-            image_list = \
-                self.update_service.saveAndReturnArray(image_list)
-            if exit:
-                break
+                self.renameLCs(image)
+                lc_ids = self.removeLCsFromList(image, lc_ids)
+                lc_ids_batch = self.removeLCsFromList(image, lc_ids_batch)
+            self.updateImageNames(image_list)
 
     def renameImages(self, lc_ids):
         step = self.lc_paging
@@ -225,12 +225,12 @@ def runAsScript():
 
         scripts.List(
             "IDs", optional=False, grouping="2",
-            description="List of Dataset IDs to convert to new"
+            description="List of object IDs"
             " Plates.").ofType(rlong(0)),
 
         scripts.List(
             "New_Channel_Names", optional=False, grouping="3",
-            description="Comma separated list of Channel Names"
+            description="Comma separated list of the new Channel Names"
         ).ofType(rstring(",")),
 
         version="0.1",
