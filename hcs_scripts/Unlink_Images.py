@@ -24,6 +24,7 @@ Unlink Images from a given Plate.
 
 import omero
 import omero.clients
+assert omero
 
 from omero.rtypes import rlong
 from omero.rtypes import rstring
