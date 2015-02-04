@@ -26,7 +26,7 @@ import omero
 from omero.gateway import BlitzGateway
 from omero.rtypes import rstring
 import omero.scripts as scripts
-from omero.model import PlateI
+from omero.model import PlateI, ScreenI
 
 import sys
 
@@ -34,17 +34,23 @@ from omero.util.populate_roi import DownloadingOriginalFileProvider
 from omero.util.populate_metadata import ParsingContext
 
 
-def get_original_file(conn, plateId, fileId):
-    plate = conn.getObject("Plate", int(plateId))
-    if plate is None:
-        sys.stderr.write("Error: Object does not exist.\n")
-        sys.exit(1)
+def get_original_file(conn, object_type, object_id, file_id):
+    if object_type == "Plate":
+        omero_object = conn.getObject("Plate", int(object_id))
+        if omero_object is None:
+            sys.stderr.write("Error: Plate does not exist.\n")
+            sys.exit(1)
+    else:
+        omero_object = conn.getObject("Screen", int(object_id))
+        if omero_object is None:
+            sys.stderr.write("Error: Screen does not exist.\n")
+            sys.exit(1)
     file = None
-    for ann in plate.listAnnotations():
+    for ann in omero_object.listAnnotations():
         if isinstance(ann, omero.gateway.FileAnnotationWrapper):
             print "File ID:", ann.getFile().getId(), ann.getFile().getName(),\
                 "Size:", ann.getFile().getSize()
-            if (ann.getFile().getId() == int(fileId)):
+            if (ann.getFile().getId() == int(file_id)):
                 file = ann.getFile()._obj
     if file is None:
         sys.stderr.write("Error: File does not exist.\n")
@@ -52,27 +58,31 @@ def get_original_file(conn, plateId, fileId):
     return file
 
 
-def populateMetadata(client, conn, scriptParams):
-    plateId = long(scriptParams["IDs"])
-    fileId = long(scriptParams["File_ID"])
-    original_file = get_original_file(conn, plateId, fileId)
+def populate_metadata(client, conn, script_params):
+    object_id = long(script_params["IDs"])
+    file_id = long(script_params["File_ID"])
+    original_file = get_original_file(
+        conn, script_params["Data_Type"], object_id, file_id)
     provider = DownloadingOriginalFileProvider(conn)
-    fileHandle = provider.get_original_file_data(original_file)
-    plate = PlateI(long(plateId), False)
-    ctx = ParsingContext(client, plate, "")
-    ctx.parse_from_handle(fileHandle)
+    file_handle = provider.get_original_file_data(original_file)
+    if script_params["Data_Type"] == "Plate":
+        omero_object = PlateI(long(object_id), False)
+    else:
+        omero_object = ScreenI(long(object_id), False)
+    ctx = ParsingContext(client, omero_object, "")
+    ctx.parse_from_handle(file_handle)
     ctx.write_to_omero()
 
 
 if __name__ == "__main__":
-    dataTypes = [rstring('Plate')]
+    dataTypes = [rstring('Plate'), rstring('Screen')]
     client = scripts.client(
-        'Poulate_Metadata.py',
+        'Populate_Metadata.py',
         """
         """,
         scripts.String(
             "Data_Type", optional=False, grouping="1",
-            description="Choose source of images (only Plate supported)",
+            description="Choose source of images",
             values=dataTypes, default="Plate"),
 
         scripts.String(
@@ -83,7 +93,7 @@ if __name__ == "__main__":
             "File_ID", optional=False, grouping="3", default='',
             description="File ID containing metadata to populate."),
 
-        version="0.1",
+        version="0.2",
         authors=["Emil Rozbicki"],
         institutions=["Glencoe Software Inc."],
         contact="emil@glencoesoftware.com",
@@ -99,7 +109,7 @@ if __name__ == "__main__":
 
         # wrap client to use the Blitz Gateway
         conn = BlitzGateway(client_obj=client)
-        message = populateMetadata(client, conn, scriptParams)
+        message = populate_metadata(client, conn, scriptParams)
         client.setOutput("Message", rstring(message))
 
     finally:
