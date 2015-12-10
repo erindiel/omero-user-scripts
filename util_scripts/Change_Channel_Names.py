@@ -119,8 +119,8 @@ class renameChannels:
         lc_ids = [lc_id[0].val for lc_id in lc_ids]
         return set(lc_ids)
 
-    def removeLCsFromList(self, image, lc_ids_list):        
-        image_noc = image.getPrimaryPixels().getSizeC().getValue()     
+    def removeLCsFromList(self, image, lc_ids_list):
+        image_noc = image.getPrimaryPixels().getSizeC().getValue()
         for c in range(image_noc):
             channel = None
             try:
@@ -129,9 +129,9 @@ class renameChannels:
                 pass
             if channel is None \
                     or channel.getLogicalChannel() is None:
-                continue     
-            lc_id = channel.getLogicalChannel().id.val    
-            lc_ids_list.remove(lc_id)      
+                continue
+            lc_id = channel.getLogicalChannel().id.val
+            lc_ids_list.remove(lc_id)
         return lc_ids_list
 
     def renameLCs(self, image):
