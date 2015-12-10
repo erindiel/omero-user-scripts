@@ -116,12 +116,22 @@ class renameChannels:
         lc_ids = self.query_service.projection(query, params)
         if len(lc_ids) == 0:
             return None
-        lc_ids = [lc_id[0] for lc_id in lc_ids]
-        return [lc_id.getValue() for lc_id in lc_ids]
+        lc_ids = [lc_id[0].val for lc_id in lc_ids]
+        return set(lc_ids)
 
-    def removeLCsFromList(self, lc_list, lc_ids_list):
-        for lc in lc_list:
-            lc_ids_list.remove(lc.id.val)
+    def removeLCsFromList(self, image, lc_ids_list):        
+        image_noc = image.getPrimaryPixels().getSizeC().getValue()     
+        for c in range(image_noc):
+            channel = None
+            try:
+                channel = image.getPrimaryPixels().getChannel(c)
+            except IndexError:
+                pass
+            if channel is None \
+                    or channel.getLogicalChannel() is None:
+                continue     
+            lc_id = channel.getLogicalChannel().id.val    
+            lc_ids_list.remove(lc_id)      
         return lc_ids_list
 
     def renameLCs(self, image):
@@ -144,9 +154,9 @@ class renameChannels:
         return lc_list
 
     def renameBatch(self, lc_ids, step):
-        lc_ids_batch = random.sample(lc_ids, step)
+        lc_ids_batch = set(random.sample(lc_ids, step))
         params = omero.sys.ParametersI()
-        params.addIds(lc_ids_batch)
+        params.addIds(list(lc_ids_batch))
         number_of_channels = len(self.new_channel_names)
         paging = self.image_paging
         counter = 0
@@ -173,13 +183,15 @@ class renameChannels:
                     if channel is None or channel.getLogicalChannel() is None:
                         continue
                     if channel.getLogicalChannel().id.val not in lc_ids:
-                        return
+                        return lc_ids
                 print "Renaming channels for %s [%s]" \
                     % (image.name.val, image.id.val)
                 lc_list = self.renameLCs(image)
                 self.update_service.saveArray(lc_list)
-                lc_ids = self.removeLCsFromList(lc_list, lc_ids)
-                lc_ids_batch = self.removeLCsFromList(lc_list, lc_ids_batch)
+                lc_list = set([lc.id.val for lc in lc_list])
+                lc_ids = lc_ids - lc_list
+                lc_ids_batch = lc_ids_batch - lc_list
+        return lc_ids
 
     def renameImages(self, lc_ids):
         step = self.lc_paging
@@ -187,7 +199,7 @@ class renameChannels:
         while len(lc_ids) > 0:
             if len(lc_ids) < 100:
                 step = len(lc_ids)
-            self.renameBatch(lc_ids, step)
+            lc_ids = self.renameBatch(lc_ids, step)
             print "\n%i unique logical channels remains" % len(lc_ids)
 
     def getQuery(self):
