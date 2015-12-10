@@ -173,7 +173,6 @@ class renameChannels:
                     if channel is None or channel.getLogicalChannel() is None:
                         continue
                     if channel.getLogicalChannel().id.val not in lc_ids:
-                        self.update_service.saveArray(lc_list)
                         return
                 print "Renaming channels for %s [%s]" \
                     % (image.name.val, image.id.val)
