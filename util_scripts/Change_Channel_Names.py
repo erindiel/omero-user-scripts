@@ -119,22 +119,29 @@ class renameChannels:
         lc_ids = [lc_id[0] for lc_id in lc_ids]
         return [lc_id.getValue() for lc_id in lc_ids]
 
-    def updateImageNames(self, image_list):
-        image_list = self.update_service.saveAndReturnArray(image_list)
-
-    def removeLCsFromList(self, image, lc_ids_list):
-        image_noc = image.getPrimaryPixels().getSizeC().getValue()
-        for c in range(image_noc):
-            lc_id = image.getPrimaryPixels().getChannel(c). \
-                getLogicalChannel().getId().getValue()
-            lc_ids_list.remove(lc_id)
+    def removeLCsFromList(self, lc_list, lc_ids_list):
+        for lc in lc_list:
+            lc_ids_list.remove(lc.id.val)
         return lc_ids_list
 
     def renameLCs(self, image):
         number_of_channels = len(self.new_channel_names)
+        lc_list = []
         for c in range(number_of_channels):
-            image.getPrimaryPixels().getChannel(c).getLogicalChannel().setName(
-                rstring(self.new_channel_names[c]))
+            channel = None
+            try:
+                channel = image.getPrimaryPixels().getChannel(c)
+            except IndexError:
+                pass
+            if channel is None \
+                    or channel.getLogicalChannel() is None:
+                continue
+            lc = channel.getLogicalChannel()
+            print "\tchannel index: %s to: %s" \
+                % (c, self.new_channel_names[c])
+            lc.setName(rstring(self.new_channel_names[c]))
+            lc_list.append(lc)
+        return lc_list
 
     def renameBatch(self, lc_ids, step):
         lc_ids_batch = random.sample(lc_ids, step)
@@ -150,23 +157,30 @@ class renameChannels:
                 self.get_image_query, params)
             print "Retrived %i images" % len(image_list)
             for image in image_list:
-                check_lc = image.getPrimaryPixels().getChannel(0). \
-                    getLogicalChannel().getId().getValue()
-                if check_lc not in lc_ids:
-                    self.updateImageNames(image_list)
-                    return
-                print "Renaming", image.getName().getValue(), \
-                    image.getId().getValue()
                 image_noc = image.getPrimaryPixels().getSizeC().getValue()
                 if image_noc != number_of_channels:
-                    print "\tChannels don't match, skipping"
+                    print "\tChannels don't match for %s [%s], skipping" \
+                        % (image.name.val, image.id.val)
                     lc_ids = self.removeLCsFromList(image, lc_ids)
                     lc_ids_batch = self.removeLCsFromList(image, lc_ids_batch)
                     continue
-                self.renameLCs(image)
-                lc_ids = self.removeLCsFromList(image, lc_ids)
-                lc_ids_batch = self.removeLCsFromList(image, lc_ids_batch)
-            self.updateImageNames(image_list)
+                for c in range(image_noc):
+                    channel = None
+                    try:
+                        channel = image.getPrimaryPixels().getChannel(c)
+                    except IndexError:
+                        pass
+                    if channel is None or channel.getLogicalChannel() is None:
+                        continue
+                    if channel.getLogicalChannel().id.val not in lc_ids:
+                        self.update_service.saveArray(lc_list)
+                        return
+                print "Renaming channels for %s [%s]" \
+                    % (image.name.val, image.id.val)
+                lc_list = self.renameLCs(image)
+                self.update_service.saveArray(lc_list)
+                lc_ids = self.removeLCsFromList(lc_list, lc_ids)
+                lc_ids_batch = self.removeLCsFromList(lc_list, lc_ids_batch)
 
     def renameImages(self, lc_ids):
         step = self.lc_paging
@@ -250,8 +264,8 @@ def runAsScript():
         conn = BlitzGateway(client_obj=client)
         nameChanger = renameChannels(conn, scriptParams)
         message = nameChanger.run()
+        print message
         client.setOutput("Message", rstring(message))
-
     finally:
         client.closeSession()
 
