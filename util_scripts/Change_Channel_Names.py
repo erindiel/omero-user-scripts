@@ -147,8 +147,8 @@ class renameChannels:
                     or channel.getLogicalChannel() is None:
                 continue
             lc = channel.getLogicalChannel()
-            print "\tchannel index: %s to: %s" \
-                % (c, self.new_channel_names[c])
+            print(("\tchannel index: %s to: %s" \
+                % (c, self.new_channel_names[c])))
             lc.setName(rstring(self.new_channel_names[c]))
             lc_list.append(lc)
         return lc_list
@@ -165,12 +165,12 @@ class renameChannels:
             counter += 1
             image_list = self.query_service.findAllByQuery(
                 self.get_image_query, params)
-            print "Retrived %i images" % len(image_list)
+            print(("Retrived %i images" % len(image_list)))
             for image in image_list:
                 image_noc = image.getPrimaryPixels().getSizeC().getValue()
                 if image_noc != number_of_channels:
-                    print "\tChannels don't match for %s [%s], skipping" \
-                        % (image.name.val, image.id.val)
+                    print(("\tChannels don't match for %s [%s], skipping" \
+                        % (image.name.val, image.id.val)))
                     lc_ids = self.removeLCsFromList(image, lc_ids)
                     lc_ids_batch = self.removeLCsFromList(image, lc_ids_batch)
                     continue
@@ -184,8 +184,8 @@ class renameChannels:
                         continue
                     if channel.getLogicalChannel().id.val not in lc_ids:
                         return lc_ids
-                print "Renaming channels for %s [%s]" \
-                    % (image.name.val, image.id.val)
+                print(("Renaming channels for %s [%s]" \
+                    % (image.name.val, image.id.val)))
                 lc_list = self.renameLCs(image)
                 self.update_service.saveArray(lc_list)
                 lc_list = set([lc.id.val for lc in lc_list])
@@ -195,12 +195,12 @@ class renameChannels:
 
     def renameImages(self, lc_ids):
         step = self.lc_paging
-        print "Got %i unique logical channels" % len(lc_ids)
+        print(("Got %i unique logical channels" % len(lc_ids)))
         while len(lc_ids) > 0:
             if len(lc_ids) < 100:
                 step = len(lc_ids)
             lc_ids = self.renameBatch(lc_ids, step)
-            print "\n%i unique logical channels remains" % len(lc_ids)
+            print(("\n%i unique logical channels remains" % len(lc_ids)))
 
     def getQuery(self):
         if self.data_type == "Screen":
@@ -216,7 +216,7 @@ class renameChannels:
         elif self.data_type == "Image":
             return self.image_query
         else:
-            print ""
+            print("")
 
     def run(self):
         query = self.getQuery()
@@ -275,7 +275,7 @@ def runAsScript():
         conn = BlitzGateway(client_obj=client)
         nameChanger = renameChannels(conn, scriptParams)
         message = nameChanger.run()
-        print message
+        print(message)
         client.setOutput("Message", rstring(message))
     finally:
         client.closeSession()

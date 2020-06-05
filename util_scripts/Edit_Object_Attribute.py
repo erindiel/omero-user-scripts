@@ -85,9 +85,9 @@ def run():
         elif script_params['Attribute_Type'] == 'Int':
             value = rtype(int(value))
         elif script_params['Attribute_Type'] == 'Long':
-            value = rtype(long(value))
+            value = rtype(int(value))
         elif script_params['Attribute_Type'] == 'Time':
-            value = rtime(long(value))
+            value = rtime(int(value))
         else:
             value = rtype(value)
 

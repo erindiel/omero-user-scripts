@@ -75,7 +75,7 @@ class copyHighResImages:
 
     def printImageList(self):
         for image in self.image_dict:
-            print image, self.image_dict[image]
+            print((image, self.image_dict[image]))
 
     def getTargetDatasetNames(self):
         """
@@ -100,15 +100,15 @@ class copyHighResImages:
             dataset = self.query_service.findByQuery(
                 self.dataset_query, params)
             if dataset is None:
-                print "Creating new datset"
+                print("Creating new datset")
                 dataset = omero.model.DatasetI()
                 dataset.setName(rstring(name))
                 dataset = \
                     self.update_service.saveAndReturnObject(dataset)
                 datasetId = dataset.getId().getValue()
-                print "\tNew dataset ID:", datasetId
+                print(("\tNew dataset ID:", datasetId))
                 link = omero.model.ProjectDatasetLinkI()
-                print "\tLinking dataset to:", self.target_project_id
+                print(("\tLinking dataset to:", self.target_project_id))
                 link.parent = omero.model.ProjectI(
                     self.target_project_id, False)
                 link.child = omero.model.DatasetI(datasetId, False)
@@ -140,7 +140,7 @@ class copyHighResImages:
                 v.id.val for v in dataset_target.linkedImageList()]
             if image_id in image_ids:
                 continue
-            print "Copying image:", image_id, self.image_dict[image_id]
+            print(("Copying image:", image_id, self.image_dict[image_id]))
             dataset_target.linkImage(omero.model.ImageI(image_id, False))
         self.saveImagesToServer(dataset_dict)
 
@@ -167,7 +167,7 @@ if __name__ == "__main__":
 
         scripts.List(
             "IDs", optional=False, grouping="2",
-            description="Dataset to tag and copy images from.").ofType(long),
+            description="Dataset to tag and copy images from.").ofType(int),
 
         scripts.Int(
             "Project_ID", optional=False, grouping="3",
