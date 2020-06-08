@@ -175,8 +175,8 @@ if __name__ == "__main__":
 
         scripts.String(
             "Regex_String", optional=False, grouping="4",
-            description="New dataset name will be based on the image name \
-            formated by regex", default="^(\w+-\w+)-.*"),
+            description="New dataset name will be based on the image name" +
+            "formated by regex", default=r"^(\w+-\w+)-.*"),
 
         version="0.1",
         authors=["Emil Rozbicki"],

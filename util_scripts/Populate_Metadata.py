@@ -48,8 +48,8 @@ def get_original_file(conn, object_type, object_id, file_id):
     file = None
     for ann in omero_object.listAnnotations():
         if isinstance(ann, omero.gateway.FileAnnotationWrapper):
-            print(("File ID:", ann.getFile().getId(), ann.getFile().getName(),\
-                "Size:", ann.getFile().getSize()))
+            print(("File ID:", ann.getFile().getId(), ann.getFile().getName(),
+                   "Size:", ann.getFile().getSize()))
             if (ann.getFile().getId() == int(file_id)):
                 file = ann.getFile()._obj
     if file is None:

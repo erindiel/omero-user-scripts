@@ -147,8 +147,8 @@ class renameChannels:
                     or channel.getLogicalChannel() is None:
                 continue
             lc = channel.getLogicalChannel()
-            print(("\tchannel index: %s to: %s" \
-                % (c, self.new_channel_names[c])))
+            print(("\tchannel index: %s to: %s"
+                   % (c, self.new_channel_names[c])))
             lc.setName(rstring(self.new_channel_names[c]))
             lc_list.append(lc)
         return lc_list
@@ -169,8 +169,8 @@ class renameChannels:
             for image in image_list:
                 image_noc = image.getPrimaryPixels().getSizeC().getValue()
                 if image_noc != number_of_channels:
-                    print(("\tChannels don't match for %s [%s], skipping" \
-                        % (image.name.val, image.id.val)))
+                    print(("\tChannels don't match for %s [%s], skipping"
+                           % (image.name.val, image.id.val)))
                     lc_ids = self.removeLCsFromList(image, lc_ids)
                     lc_ids_batch = self.removeLCsFromList(image, lc_ids_batch)
                     continue
@@ -184,8 +184,8 @@ class renameChannels:
                         continue
                     if channel.getLogicalChannel().id.val not in lc_ids:
                         return lc_ids
-                print(("Renaming channels for %s [%s]" \
-                    % (image.name.val, image.id.val)))
+                print(("Renaming channels for %s [%s]"
+                       % (image.name.val, image.id.val)))
                 lc_list = self.renameLCs(image)
                 self.update_service.saveArray(lc_list)
                 lc_list = set([lc.id.val for lc in lc_list])
@@ -279,6 +279,7 @@ def runAsScript():
         client.setOutput("Message", rstring(message))
     finally:
         client.closeSession()
+
 
 if __name__ == "__main__":
     runAsScript()
