@@ -24,7 +24,6 @@ Unlink Images from a given Plate.
 
 import omero
 import omero.clients
-assert omero
 
 from omero.rtypes import rlong
 from omero.rtypes import rstring
@@ -32,6 +31,8 @@ from omero.rtypes import rstring
 from omero.sys import ParametersI
 
 import omero.scripts as scripts
+
+assert omero
 
 
 def run():
@@ -85,6 +86,7 @@ def run():
             "Unlinking of %d Image(s) successful." % count))
     finally:
         client.closeSession()
+
 
 if __name__ == "__main__":
     run()
