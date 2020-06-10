@@ -48,8 +48,8 @@ def get_original_file(conn, object_type, object_id, file_id):
     file = None
     for ann in omero_object.listAnnotations():
         if isinstance(ann, omero.gateway.FileAnnotationWrapper):
-            print "File ID:", ann.getFile().getId(), ann.getFile().getName(),\
-                "Size:", ann.getFile().getSize()
+            print(("File ID:", ann.getFile().getId(), ann.getFile().getName(),
+                   "Size:", ann.getFile().getSize()))
             if (ann.getFile().getId() == int(file_id)):
                 file = ann.getFile()._obj
     if file is None:
@@ -59,16 +59,16 @@ def get_original_file(conn, object_type, object_id, file_id):
 
 
 def populate_metadata(client, conn, script_params):
-    object_id = long(script_params["IDs"])
-    file_id = long(script_params["File_ID"])
+    object_id = int(script_params["IDs"])
+    file_id = int(script_params["File_ID"])
     original_file = get_original_file(
         conn, script_params["Data_Type"], object_id, file_id)
     provider = DownloadingOriginalFileProvider(conn)
     file_handle = provider.get_original_file_data(original_file)
     if script_params["Data_Type"] == "Plate":
-        omero_object = PlateI(long(object_id), False)
+        omero_object = PlateI(int(object_id), False)
     else:
-        omero_object = ScreenI(long(object_id), False)
+        omero_object = ScreenI(int(object_id), False)
     ctx = ParsingContext(client, omero_object, "")
     ctx.parse_from_handle(file_handle)
     ctx.write_to_omero()
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         for key in client.getInputKeys():
             if client.getInput(key):
                 scriptParams[key] = client.getInput(key, unwrap=True)
-        print scriptParams
+        print(scriptParams)
 
         # wrap client to use the Blitz Gateway
         conn = BlitzGateway(client_obj=client)

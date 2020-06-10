@@ -24,11 +24,9 @@ Edit the attributes of an object.
 
 import omero
 import omero.clients
-assert omero
-
 from omero.rtypes import rstring, rtype, rtime, rdouble
-
 import omero.scripts as scripts
+assert omero
 
 
 def run():
@@ -85,9 +83,9 @@ def run():
         elif script_params['Attribute_Type'] == 'Int':
             value = rtype(int(value))
         elif script_params['Attribute_Type'] == 'Long':
-            value = rtype(long(value))
+            value = rtype(int(value))
         elif script_params['Attribute_Type'] == 'Time':
-            value = rtime(long(value))
+            value = rtime(int(value))
         else:
             value = rtype(value)
 
@@ -106,6 +104,7 @@ def run():
             'Setting of attribute successful.'))
     finally:
         client.closeSession()
+
 
 if __name__ == '__main__':
     run()
